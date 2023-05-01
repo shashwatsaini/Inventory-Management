@@ -181,7 +181,7 @@ class Window(QMainWindow):
             vendors.to_csv(self.vendor_database_path, index=False)
             self.status.setText('Could not find vendor database, new one created')
 
-        raw_database= open(self.raw_database_path, 'w')
+        raw_database= open(self.raw_database_path, 'a')
         raw_database.close()
 
     def verify(self):
