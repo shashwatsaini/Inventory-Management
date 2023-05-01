@@ -159,7 +159,7 @@ class addItems(QWidget):
         try:
             main= open(self.raw_database_path)
         except:
-            main= open(r'C:\Users\Anil Saini\OneDrive\Desktop\College\Inventory Management System\drugs.csv')#Resorts to default database
+            main= open(r'drugs.csv')#Resorts to default database
         self.data=[]
         for i in range(size):
             temp= main.readline()
@@ -170,5 +170,5 @@ class addItems(QWidget):
 
 if __name__=='__main__':
     App= QApplication(sys.argv)
-    window= addItems(r'C:\Users\Anil Saini\OneDrive\Desktop\College\Inventory Management System\drugs.csv')
+    window= addItems(r'drugs.csv')
     sys.exit(App.exec())
