@@ -4,6 +4,7 @@ import pandas as pd
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import Qt
 import datetime
+import re
 
 GROUPBOX_HEIGHT= 60
 LABEL_WIDTH= 1080
@@ -148,21 +149,49 @@ class placeOrder_selectItems(QWidget):
         FILE= pd.read_csv(self.main_database_path)
         size= FILE.shape
         order_save=''
-        time= datetime.datetime.now()
+        new_val=''
+        current_date= datetime.datetime.now()
+        current_date= current_date.strftime('%Y-%m-%d')
+        dateFound=0
         for i in range(size[0]):
             key= FILE.iloc[i][0]
+            raw= FILE.at[i,'HISTORY']
+            formatted= re.findall(r'\((.*?)\)', raw)
+            dates = [date.split(',')[0].strip() for date in formatted]
+            for a in range(len(dates)):
+                dates[a]= dates[a].replace('\'', '')
+                dates[a]= dates[a].replace('\'', '')
+                count= [a.split(',')[1].strip() for a in formatted]
             for j in range(len(self.drugs_list)):
-                if key==self.drugs_list[j] and self.spinbox_list[j].value()>0:
-                    old_val= str(FILE.at[i,'HISTORY'])
-                    new_val= str((time.strftime('%Y-%m-%d %H:%M'), int(FILE.iloc[i][1])+int(self.spinbox_list[j].value()), self.vendor_name))
-                    val= old_val + new_val
-                    FILE.at[i,'HISTORY']= val
-                    stock=int(FILE.at[i, 'Stock'])
+                if key==self.drugs_list[j] and self.spinbox_list[j].value()>0:        
+                    for k in range(len(dates)):
+                        if dates[k]==current_date:
+                            #new_val= str((current_date.strftime('%Y-%m-%d'), int(FILE.iloc[i][1])+int(self.spinbox_list[j].value()), self.vendor_name))
+                            new_count= int(count[k])+ int(self.spinbox_list[j].value())
+                            formatted[k]= str(dates[k]) + ',' + str(new_count) + ',' + str(self.vendor_name)
+                            for b in formatted:
+                                new_val+= '(' + str(b) + ')'
+                            dateFound=1
+                            break
+                    if dateFound==1:
+                        FILE.at[i,'HISTORY']= new_val
+                        print(i)
+                        new_val=''
+                        dateFound=0
+                        print('control2')
+                    elif dateFound==0:
+                        old_val= FILE.at[i, 'HISTORY']
+                        new_val= str((current_date, int(FILE.iloc[i][1])+int(self.spinbox_list[j].value()), self.vendor_name))
+                        new_val= old_val+new_val
+                        FILE.at[i, 'HISTORY']= new_val
+                        new_val=''
+                        old_val=''
+                    stock=float(FILE.at[i, 'Stock'])
                     stock+=self.spinbox_list[j].value()
                     FILE.at[i,'Stock']= stock
 
                     #For vendors.csv:
-                    order_save+= str((key, time.strftime('%Y-%m-%d %H:%M'), int(FILE.iloc[i][1])+int(self.spinbox_list[j].value())))
+                    order_save+= str((key, current_date, stock))
                     break
         FILE.to_csv(self.main_database_path, index=False)
         vendors= pd.read_csv(self.vendors_database_path)
@@ -170,7 +199,7 @@ class placeOrder_selectItems(QWidget):
         final_order_save+=order_save
         vendors.at[self.vendor,'ORDERS']= final_order_save
         remarks_save= str(vendors.at[self.vendor, 'REMARKS'])
-        remarks_save+=str((time.strftime('%Y-%m-%d %H:%M'), self.remark_field.text()))
+        remarks_save+=str((current_date, self.remark_field.text()))
         vendors.at[self.vendor, 'REMARKS']= remarks_save
         vendors.to_csv(self.vendors_database_path, index=False)
         self.close()
